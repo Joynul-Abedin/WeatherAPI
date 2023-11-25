@@ -44,7 +44,7 @@ async function saveWeatherDataToDatabase(weatherData) {
 // }
 
 async function checkExistingData(lat, lon, requestedDate) {
-    const maxDistance = 3000; // Max distance in meters
+    const maxDistance = 5000; // Max distance in meters
     const startOfDay = new Date(requestedDate);
     startOfDay.setUTCHours(0, 0, 0, 0); // Set to start of the day in UTC
 
@@ -61,14 +61,15 @@ async function checkExistingData(lat, lon, requestedDate) {
                 $maxDistance: maxDistance
             }
         },
-        'dateRecorded': {
+        'createdAt': { // Querying the createdAt field
             $gte: startOfDay,
             $lte: endOfDay
         }
-    }).sort({ 'dateRecorded': -1 });
+    }).sort({ 'createdAt': -1 });
 
     return existingData;
 }
+
 
 
 
