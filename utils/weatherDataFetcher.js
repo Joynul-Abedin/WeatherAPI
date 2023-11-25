@@ -44,12 +44,12 @@ async function saveWeatherDataToDatabase(weatherData) {
 // }
 
 async function checkExistingData(lat, lon, requestedDate) {
-    const maxDistance = 5000; // Max distance in meters
+    const maxDistance = 3000; // Max distance in meters
     const startOfDay = new Date(requestedDate);
-    startOfDay.setHours(0, 0, 0, 0); // Set to start of the day
+    startOfDay.setUTCHours(0, 0, 0, 0); // Set to start of the day in UTC
 
     const endOfDay = new Date(requestedDate);
-    endOfDay.setHours(23, 59, 59, 999); // Set to end of the day
+    endOfDay.setUTCHours(23, 59, 59, 999); // Set to end of the day in UTC
 
     const existingData = await Weather.findOne({
         'location.coordinates': {
@@ -69,6 +69,7 @@ async function checkExistingData(lat, lon, requestedDate) {
 
     return existingData;
 }
+
 
 
 async function fetchAndSaveWeatherData(lat, lon, requestedDate) {
