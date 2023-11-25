@@ -26,8 +26,30 @@ async function saveWeatherDataToDatabase(weatherData) {
 }
 
 
-async function checkExistingData(lat, lon) {
-    const maxDistance = 5000; // Max distance in meters (adjust as needed)
+// async function checkExistingData(lat, lon) {
+//     const maxDistance = 5000; // Max distance in meters (adjust as needed)
+
+//     const existingData = await Weather.findOne({
+//         'location.coordinates': {
+//             $nearSphere: {
+//                 $geometry: {
+//                     type: "Point",
+//                     coordinates: [lon, lat]
+//                 },
+//                 $maxDistance: maxDistance
+//             }
+//         }
+//     });
+//     return existingData;
+// }
+
+async function checkExistingData(lat, lon, requestedDate) {
+    const maxDistance = 5000; // Max distance in meters
+    const startOfDay = new Date(requestedDate);
+    startOfDay.setHours(0, 0, 0, 0); // Set to start of the day
+
+    const endOfDay = new Date(requestedDate);
+    endOfDay.setHours(23, 59, 59, 999); // Set to end of the day
 
     const existingData = await Weather.findOne({
         'location.coordinates': {
@@ -38,27 +60,16 @@ async function checkExistingData(lat, lon) {
                 },
                 $maxDistance: maxDistance
             }
+        },
+        'dateRecorded': {
+            $gte: startOfDay,
+            $lte: endOfDay
         }
-    });
+    }).sort({ 'dateRecorded': -1 });
+
     return existingData;
 }
 
-// async function fetchAndSaveWeatherData(lat, lon) {
-//     try {
-//         const existingData = await checkExistingData(lat, lon);
-//         if (existingData) {
-//             console.log('Similar weather data already exists for nearby location.');
-//             // Optionally update the existing data or skip saving
-//             return;
-//         }
-
-//         const weatherData = await fetchWeatherDataFromAPI(lat, lon);
-//         await saveWeatherDataToDatabase(weatherData);
-//         console.log('New weather data fetched and saved:', new Date());
-//     } catch (error) {
-//         console.error('Failed to fetch and save weather data:', error);
-//     }
-// }
 
 async function fetchAndSaveWeatherData(lat, lon, requestedDate) {
     const existingData = await checkExistingData(lat, lon, requestedDate);
