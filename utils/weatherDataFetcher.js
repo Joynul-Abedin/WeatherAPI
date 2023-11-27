@@ -15,110 +15,103 @@ async function fetchWeatherDataFromAPI(lat, lon) {
 }
 
 async function saveWeatherDataToDatabase(weatherData) {
-    // Add coordinates field to the location object
     weatherData.location.coordinates = {
-        type: "Point",
-        coordinates: [weatherData.location.lon, weatherData.location.lat]
-    };
-
+                type: "Point",
+                coordinates: [weatherData.location.lon, weatherData.location.lat]
+            };
     const weather = new Weather(weatherData);
     await weather.save();
+    return weather; // Return the saved document
 }
 
 
-// async function checkExistingData(lat, lon) {
-//     const maxDistance = 5000; // Max distance in meters (adjust as needed)
 
-//     const existingData = await Weather.findOne({
-//         'location.coordinates': {
-//             $nearSphere: {
-//                 $geometry: {
-//                     type: "Point",
-//                     coordinates: [lon, lat]
-//                 },
-//                 $maxDistance: maxDistance
-//             }
-//         }
-//     });
-//     return existingData;
+// async function saveWeatherDataToDatabase(weatherData) {
+//     // Add coordinates field to the location object
+//     weatherData.location.coordinates = {
+//         type: "Point",
+//         coordinates: [weatherData.location.lon, weatherData.location.lat]
+//     };
+
+//     console.log('Saving weather data to database...', weatherData);
+
+//     const weather = new Weather(weatherData);
+//     await weather.save();
 // }
-
-async function checkExistingData(lat, lon, requestedDate) {
-    const maxDistance = 5000; // Max distance in meters
-    const startOfDay = new Date(requestedDate);
-    startOfDay.setUTCHours(0, 0, 0, 0); // Set to start of the day in UTC
-
-    const endOfDay = new Date(requestedDate);
-    endOfDay.setUTCHours(23, 59, 59, 999); // Set to end of the day in UTC
-
-    const existingData = await Weather.findOne({
-        'location.coordinates': {
-            $nearSphere: {
-                $geometry: {
-                    type: "Point",
-                    coordinates: [lon, lat]
-                },
-                $maxDistance: maxDistance
-            }
-        },
-        'createdAt': { // Querying the createdAt field
-            $gte: startOfDay,
-            $lte: endOfDay
-        }
-    }).sort({ 'createdAt': -1 });
-
-    return existingData;
-}
-
-
-
 
 async function fetchAndSaveWeatherData(lat, lon, requestedDate) {
     const existingData = await checkExistingData(lat, lon, requestedDate);
     if (existingData) {
         console.log(`Today's weather data already exists for ${requestedDate.toISOString().split('T')[0]}.`);
-        return existingData;
+        return existingData; // This should return the document with `createdAt` and `updatedAt`
     }
-    // Fetch and save new data only if existing data is not found
-    const weatherData = await fetchWeatherDataFromAPI(lat, lon);
-    weatherData.dateRecorded = new Date(); // Set the current date as the date of record
-    await saveWeatherDataToDatabase(weatherData);
-    console.log(`New weather data fetched and saved for ${weatherData.dateRecorded.toISOString().split('T')[0]}:`, new Date());
 
-    return weatherData; // Return the newly fetched data
+    const weatherData = await fetchWeatherDataFromAPI(lat, lon); 
+    // Ensure no additional dateRecorded field is being added here
+    const savedWeatherData = await saveWeatherDataToDatabase(weatherData);
+    console.log(`New weather data fetched and saved for ${savedWeatherData.createdAt.toISOString().split('T')[0]}:`, new Date());
+
+    return savedWeatherData; // Return the document saved in the database
 }
+
+
+
+// async function fetchAndSaveWeatherData(lat, lon, requestedDate) {
+//     const existingData = await checkExistingData(lat, lon, requestedDate);
+//     if (existingData) {
+//         console.log(`Today's weather data already exists for ${requestedDate.toISOString().split('T')[0]}.`);
+//         return existingData;
+//     }
+//     // Fetch and save new data only if existing data is not found
+//     const weatherData = await fetchWeatherDataFromAPI(lat, lon); 
+//     weatherData.dateRecorded = new Date(); // Set the current date as the date of record
+//     await saveWeatherDataToDatabase(weatherData);
+//     console.log(`New weather data fetched and saved for ${weatherData.dateRecorded.toISOString().split('T')[0]}:`, new Date());
+
+//     return weatherData; // Return the newly fetched data
+// }
 
 async function checkExistingData(lat, lon, requestedDate) {
     const maxDistance = 5000; // Max distance in meters
-    // Adjust the range to account for potential time zone differences
-    const startOfDay = new Date(requestedDate.setHours(0, 0, 0, 0));
-    startOfDay.setHours(startOfDay.getHours() - 12); // Broaden the start range
-    const endOfDay = new Date(requestedDate.setHours(23, 59, 59, 999));
-    endOfDay.setHours(endOfDay.getHours() + 12); // Broaden the end range
 
-    console.log('Requested Date:', requestedDate.toISOString());
-    console.log('Start of Day:', startOfDay.toISOString());
-    console.log('End of Day:', endOfDay.toISOString());
+    // Ensure requestedDate is a Date object
+    const requestedDateObj = (requestedDate instanceof Date) ? requestedDate : new Date(requestedDate);
+
+    if (isNaN(requestedDateObj.getTime())) {
+        throw new Error('Invalid date format');
+    }
+
+    const startOfDay = new Date(requestedDateObj);
+    startOfDay.setUTCHours(0, 0, 0, 0);
+
+    const endOfDay = new Date(requestedDateObj);
+    endOfDay.setUTCHours(23, 59, 59, 999);
+
+    // Define the query
     const query = {
         'location.coordinates': {
             $nearSphere: {
                 $geometry: {
                     type: "Point",
-                    coordinates: [lon, lat]
+                    coordinates: [parseFloat(lon), parseFloat(lat)]
                 },
                 $maxDistance: maxDistance
             }
         },
-        'dateRecorded': {
+        'createdAt': {
             $gte: startOfDay,
             $lte: endOfDay
         }
     };
+
     console.log('MongoDB Query:', JSON.stringify(query));
-    const existingData = await Weather.findOne(query).sort({ 'dateRecorded': -1 });
-    console.log(`Existing data for ${requestedDate.toISOString().split('T')[0]}:`, existingData);
+    const existingData = await Weather.findOne(query).sort({ 'createdAt': -1 });
+    console.log(`Existing data for ${requestedDateObj.toISOString().split('T')[0]}:`, existingData);
+
     return existingData;
 }
+
+
 
 // Export the updated functions
 module.exports = {
