@@ -4,6 +4,12 @@ const WeatherReport = require('../models/weather'); // Adjust the path to your M
 
 const { fetchAndSaveWeatherData } = require('../utils/weatherDataFetcher');
 
+
+// Endpoint to check if the server is running
+router.get('/ping', (req, res) => {
+    res.send('pong');
+});
+
 // Endpoint to manually trigger weather data fetch
 router.post('/fetch', async (req, res) => {
     try {
