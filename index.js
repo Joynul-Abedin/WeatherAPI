@@ -4,6 +4,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cron = require('node-cron');
 const weatherRoutes = require('./routes/weather');
+const astronomyRoutes = require('./routes/astronomy');
 const { fetchAndSaveWeatherData } = require('./utils/weatherDataFetcher');
 
 const app = express();
@@ -19,6 +20,7 @@ app.use(express.json());
 
 // Routes
 app.use('/api', weatherRoutes);
+app.use('/api', astronomyRoutes);
 
 // Schedule weather data updates
 function scheduleWeatherDataUpdates() {

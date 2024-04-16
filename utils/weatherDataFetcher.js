@@ -4,7 +4,7 @@ const Weather = require('../models/weather');
 async function fetchWeatherDataFromAPI(lat, lon) {
     try {
         const apiKey = process.env.OPENWEATHER_API_KEY; // API key from environment variable
-        const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${lat},${lon}&days=7`;
+        const url = `https://api.weatherapi.com/v1/forecast.json?key=${apiKey}&q=${lat},${lon}&days=5`;
 
         const response = await axios.get(url);
         return response.data;
