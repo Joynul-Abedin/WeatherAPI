@@ -15,6 +15,7 @@ async function fetchAstronomyData(lat, lon, date) {
 router.get('/astronomy', async (req, res) => {
   const { latitude, longitude, date } = req.query;
 
+  console.log(`Latitude: ${latitude}, Longitude: ${longitude}, Date: ${date}`);
   try {
     const lat = parseFloat(latitude);
     const lon = parseFloat(longitude);
